@@ -140,15 +140,16 @@ def find_name_peaks(pct):
     return peaks
 
 
-def plot_name_pct_peak(names_annual_data, names_overall_data, initial_name):
+def plot_name_pct_peak(names_annual_data, names_overall_data, initial_name, gender):
+    gender = "males" if gender == "M" else "females"
     year_range = [list(names_overall_data["year"])[i] for i in [0, -1]]
     fig = px.line(
         names_annual_data.query("name==@initial_name"),
         x="year",
         y=["pct_gender", "peak"],
         range_x=(year_range[0] - 1, year_range[1] + 1),
-        title=f"Popularity of name '<b>{initial_name.capitalize()}</b>' by year",
-        labels={"value": "% of babies born", "year": "Year"},
+        title=f"% of newborn {gender} named '<b>{initial_name.capitalize()}</b>', by year",
+        labels={"value": f"% newborn {gender}", "year": "Year"},
     )
     fig.data[1].update(mode="markers", marker_symbol="x", marker_size=10)
     fig.layout.yaxis["rangemode"] = "tozero"
@@ -164,7 +165,7 @@ def plot_name_pct_peak(names_annual_data, names_overall_data, initial_name):
             "args": [
                 {"y": [curr_name_data["pct_gender"], curr_name_data["peak"]]},
                 {
-                    "title": f"Popularity of name '<b>{curr_name.capitalize()}</b>' by year"
+                    "title": f"% of newborn {gender} named '<b>{curr_name.capitalize()}</b>', by year"
                 },
             ],
             "label": curr_name.capitalize(),
@@ -183,33 +184,26 @@ def plot_name_pct_peak(names_annual_data, names_overall_data, initial_name):
     st.write(fig)
 
 
-def main():
-    st.set_page_config(
-        page_title="US Baby Names",
-        page_icon=None,
-        layout="centered",
-        initial_sidebar_state="auto",
+def init_header_elements():
+    st.title("Explore US baby names (1880 - 2019)")
+    st.markdown(
+        "Data extracted from [Data.gov](https://catalog.data.gov/dataset/baby-names-from-social-security-card-applications-national-level-data)"
+    )
+    st.write(
+        """
+        Inspired by certain memes, I started exploring baby names in the US. Scroll down to play with the data!
+        """
     )
 
-    # Load data
-    baby_names = load_data("baby_names")
-    biblical_names = load_data("biblical_names")
-    religion_trends = load_data("religion_trends")
 
-    # Get data for top n names
-    gender, n = "F", 10
-    top_10_female_names = get_top_n_names_sorted(baby_names, gender, n)
-    top_10_female_names_data = get_names_data_filled(
-        baby_names, gender, top_10_female_names["name"]
-    )
-
-    gender, n = "M", 10
-    top_10_male_names = get_top_n_names_sorted(baby_names, gender, n)
-    top_10_male_names_data = get_names_data_filled(
-        baby_names, gender, top_10_male_names["name"]
-    )
-
+def init_top_n_names_elements(
+    top_10_female_names,
+    top_10_female_names_data,
+    top_10_male_names,
+    top_10_male_names_data,
+):
     # Visualize top n names
+    st.markdown("### In 2050 - Don't be an Olivia?")
     gender_input = st.radio("Gender", options=["F", "M"])
 
     @st.cache(suppress_st_warning=True)
@@ -232,20 +226,66 @@ def main():
         name_input = st.selectbox(
             "Names",
             options=list(names_dropdown_mapping["M"].keys()),
-            index=list(names_dropdown_mapping["M"].values()).index("david"),
+            index=list(names_dropdown_mapping["M"].values()).index("oliver"),
         )
     else:
         name_input = st.selectbox(
             "Names",
             options=list(names_dropdown_mapping["F"].keys()),
-            index=list(names_dropdown_mapping["F"].values()).index("karen"),
+            index=list(names_dropdown_mapping["F"].values()).index("olivia"),
         )
 
     name_selected = names_dropdown_mapping[gender_input][name_input]
     if gender_input == "M":
-        plot_name_pct_peak(top_10_male_names_data, top_10_male_names, name_selected)
+        plot_name_pct_peak(
+            top_10_male_names_data, top_10_male_names, name_selected, "M"
+        )
     else:
-        plot_name_pct_peak(top_10_female_names_data, top_10_female_names, name_selected)
+        plot_name_pct_peak(
+            top_10_female_names_data, top_10_female_names, name_selected, "F"
+        )
+
+    st.write(
+        """
+        The data above contains baby names which were once top 10 in popularity.  \n
+        Select the gender, then the name from the dropdown menu. Or, use the slider to choose the names. The chart shows the rough percentage of newborns in each year with the selected name.
+        """
+    )
+
+
+def main():
+    st.set_page_config(
+        page_title="US Baby Names",
+        page_icon=None,
+        layout="centered",
+        initial_sidebar_state="auto",
+    )
+    init_header_elements()
+
+    # Load data
+    baby_names = load_data("baby_names")
+    biblical_names = load_data("biblical_names")
+    religion_trends = load_data("religion_trends")
+
+    # Get data for top n names
+    gender, n = "F", 10
+    top_10_female_names = get_top_n_names_sorted(baby_names, gender, n)
+    top_10_female_names_data = get_names_data_filled(
+        baby_names, gender, top_10_female_names["name"]
+    )
+
+    gender, n = "M", 10
+    top_10_male_names = get_top_n_names_sorted(baby_names, gender, n)
+    top_10_male_names_data = get_names_data_filled(
+        baby_names, gender, top_10_male_names["name"]
+    )
+
+    init_top_n_names_elements(
+        top_10_female_names,
+        top_10_female_names_data,
+        top_10_male_names,
+        top_10_male_names_data,
+    )
 
 
 if __name__ == "__main__":
