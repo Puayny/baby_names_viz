@@ -1,5 +1,5 @@
+import os, re
 import streamlit as st
-
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -14,10 +14,41 @@ def load_data(data_to_load):
     Loads data. Using function for this for caching purposes
     Returns None if something unexpected happens
     """
+    data_dir = "data/"
     if data_to_load == "baby_names":
-        baby_names = pd.read_csv(
-            "data/data_mod/names_combined.csv", keep_default_na=False
+        # Concat all data files
+        baby_names = []
+        for filename in os.listdir(data_dir):
+            if filename.startswith("yob"):
+                year = int(re.match("yob(.+)\.txt", filename).groups(0)[0])
+                curr_names_df = pd.read_csv(
+                    data_dir + filename, names=["name", "gender", "count"]
+                )
+                curr_names_df["year"] = year
+                baby_names.append(curr_names_df)
+        baby_names = pd.concat(baby_names)
+
+        # Count as a pct of total count (each gender)
+        total_count_per_year_gender = baby_names.groupby(["year", "gender"])[
+            "count"
+        ].sum()
+        baby_names["pct_gender"] = baby_names.groupby(["year", "gender"])[
+            "count"
+        ].transform(
+            lambda row: row
+            / total_count_per_year_gender.loc[row.name[0], row.name[1]]
+            * 100
         )
+
+        # Count as a pct of total count (both genders)
+        total_count_per_year = baby_names.groupby(["year"])["count"].sum()
+        baby_names["pct_total"] = baby_names.groupby(["year"])["count"].transform(
+            lambda row: row / total_count_per_year.loc[row.name] * 100
+        )
+
+        # Convert name to lowercase
+        baby_names["name"] = baby_names["name"].apply(lambda name: name.lower())
+
         baby_names.set_index(["year", "gender", "name"], inplace=True)
         return baby_names
     elif data_to_load == "biblical_names":
