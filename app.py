@@ -42,9 +42,6 @@ def load_data(data_to_load, prereq_data=None):
                 curr_names_df["year"] = year
                 baby_names.append(curr_names_df)
         baby_names = pd.concat(baby_names)
-        baby_names.sort_values(
-            by=["year", "gender", "count"], ascending=[True, True, False]
-        )
 
         # Count as a pct of total count (each gender)
         total_count_per_year_gender = baby_names.groupby(["year", "gender"])[
@@ -68,6 +65,9 @@ def load_data(data_to_load, prereq_data=None):
         baby_names["name"] = baby_names["name"].apply(lambda name: name.lower())
 
         baby_names.set_index(["year", "gender", "name"], inplace=True)
+        baby_names.sort_values(
+            by=["year", "gender", "count"], ascending=[True, True, False]
+        )
         return baby_names
     elif data_to_load == "biblical_names":
         with open("data/data_external/biblical_names.txt", "r") as f:
@@ -326,11 +326,6 @@ def init_explore_name_trends(baby_names, all_names_by_gender):
         x_curr = list(range(year_range[0], year_range[1]))
         y_curr = [np.nan] * len(x_curr)
         st.write(year_range)
-        st.write(baby_names.query("gender=='F'"))
-        st.write(type(x_curr))
-        st.write(x_curr)
-        st.write(type(y_curr))
-        st.write(y_curr)
         fig = px.line(
             x=x_curr,
             y=y_curr,
@@ -386,6 +381,8 @@ def main():
     top_10_male_names_data = get_names_data_filled(
         baby_names, gender, top_10_male_names["name"], True
     )
+    
+    st.write(baby_names.query("gender=='F'"))
 
     init_top_n_names_elements(
         top_10_female_names,
@@ -397,7 +394,7 @@ def main():
     st.markdown("---")
 
     init_explore_name_trends(baby_names, all_names_by_gender)
-
+    st.write(baby_names.query("gender=='F'"))
 
 if __name__ == "__main__":
     main()
