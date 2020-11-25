@@ -325,8 +325,6 @@ def init_explore_name_trends(baby_names, all_names_by_gender):
     if len(chart_data) == 0:
         x_curr = list(range(year_range[0], year_range[1]))
         y_curr = [np.nan] * len(x_curr)
-        st.write(year_range)
-        st.write(baby_names)
         st.write(type(x_curr))
         st.write(x_curr)
         st.write(type(y_curr))
