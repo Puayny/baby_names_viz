@@ -8,8 +8,23 @@ from plotly.subplots import make_subplots
 from scipy.signal import find_peaks
 
 
+def init_sidebar_elements():
+    st.sidebar.header("Data")
+    st.sidebar.markdown(
+        "Extracted from [Data.gov](https://catalog.data.gov/dataset/baby-names-from-social-security-card-applications-national-level-data)"
+    )
+    st.sidebar.write(
+        """
+        The data lists 1) the first names of babies born in the US, and 2) the number of babies born with each name, from 1880 to 2019.  \n
+        Only names with >5 occurences in a year are included in the dataset.  \n
+        Note that we have converted all counts to percentages.  \n
+        For example, if there were 10 million female babies born in 2000, and 1 million of them were named Mary, we converted the 1 million to 10%
+        """
+    )
+
+
 @st.cache(show_spinner=False)
-def load_data(data_to_load):
+def load_data(data_to_load, prereq_data=None):
     """
     Loads data. Using function for this for caching purposes
     Returns None if something unexpected happens
@@ -59,6 +74,15 @@ def load_data(data_to_load):
     elif data_to_load == "religion_trend":
         religion_trend = pd.read_csv("data/data_external/religion_trend_america.csv")
         return religion_trend
+    elif data_to_load == "all_names_by_gender":
+        all_names_by_gender = {}
+        all_names_by_gender["M"] = list(
+            prereq_data.query("gender=='M'").index.get_level_values(2).unique()
+        )
+        all_names_by_gender["F"] = list(
+            prereq_data.query("gender=='F'").index.get_level_values(2).unique()
+        )
+        return all_names_by_gender
     return None
 
 
@@ -83,7 +107,7 @@ def get_top_n_names_sorted(df, gender, n):
 
 
 @st.cache(show_spinner=False)
-def get_names_data_filled(df, gender, names):
+def get_names_data_filled(df, gender, names, calc_peak):
     """
     Return all years' data for a list of names, including years where the name is not in dataset
     Also includes peak year data
@@ -104,15 +128,16 @@ def get_names_data_filled(df, gender, names):
     data_filled["year"] = data_years
 
     # Fill in data for peaks
-    data_filled["peak"] = None
-    for name in names:
-        curr_name_data = data_filled.query("name==@name")
-        curr_name_peaks = find_name_peaks(curr_name_data["pct_gender"])
-        curr_name_peaks = curr_name_data.index[curr_name_peaks]
-        data_filled.loc[curr_name_peaks, "peak"] = data_filled.loc[
-            curr_name_peaks, "pct_gender"
-        ]
-    data_filled["peak"] = data_filled["peak"].astype(np.float)
+    if calc_peak:
+        data_filled["peak"] = None
+        for name in names:
+            curr_name_data = data_filled.query("name==@name")
+            curr_name_peaks = find_name_peaks(curr_name_data["pct_gender"])
+            curr_name_peaks = curr_name_data.index[curr_name_peaks]
+            data_filled.loc[curr_name_peaks, "peak"] = data_filled.loc[
+                curr_name_peaks, "pct_gender"
+            ]
+        data_filled["peak"] = data_filled["peak"].astype(np.float)
 
     return data_filled
 
@@ -150,10 +175,15 @@ def plot_name_pct_peak(names_annual_data, names_overall_data, initial_name, gend
         range_x=(year_range[0] - 1, year_range[1] + 1),
         title=f"% of newborn {gender} named '<b>{initial_name.capitalize()}</b>', by year",
         labels={"value": f"% newborn {gender}", "year": "Year"},
+        # hover_data={"variable": False},
     )
     fig.data[1].update(mode="markers", marker_symbol="x", marker_size=10)
     fig.layout.yaxis["rangemode"] = "tozero"
     fig.update_layout(showlegend=False)
+    fig.update_layout(hovermode="x unified")
+
+    # Update hover text
+    fig.update_traces(hovertemplate="%{y:.4f}%<extra></extra>")
 
     # Create and add slider
     steps = []
@@ -186,13 +216,10 @@ def plot_name_pct_peak(names_annual_data, names_overall_data, initial_name, gend
 
 def init_header_elements():
     st.title("Explore US baby names (1880 - 2019)")
-    st.markdown(
-        "Data extracted from [Data.gov](https://catalog.data.gov/dataset/baby-names-from-social-security-card-applications-national-level-data)"
-    )
     st.write(
-        """
-        Inspired by certain memes, I started exploring baby names in the US. Scroll down to play with the data!
-        """
+        "Inspired by certain memes, we started exploring baby names in the US.  \n"
+        "Click on the left sidebar to read about the data.  \n"
+        "Scroll down to play with the data!"
     )
 
 
@@ -203,7 +230,14 @@ def init_top_n_names_elements(
     top_10_male_names_data,
 ):
     # Visualize top n names
-    st.markdown("### In 2050 - Don't be an Olivia?")
+    st.subheader("In 2050 - Don't be an Olivia?")
+
+    st.write(
+        """
+        The data above contains baby names which were once top 10 in popularity.  \n
+        Select the gender, then the name from the dropdown menu. Or, use the slider to choose the names. The chart shows the rough percentage of newborns in each year with the selected name.
+        """
+    )
     gender_input = st.radio("Gender", options=["F", "M"])
 
     @st.cache(suppress_st_warning=True)
@@ -245,12 +279,70 @@ def init_top_n_names_elements(
             top_10_female_names_data, top_10_female_names, name_selected, "F"
         )
 
+
+def init_explore_name_trends(baby_names, all_names_by_gender):
+    st.subheader("Explore the data yourself")
     st.write(
         """
-        The data above contains baby names which were once top 10 in popularity.  \n
-        Select the gender, then the name from the dropdown menu. Or, use the slider to choose the names. The chart shows the rough percentage of newborns in each year with the selected name.
+        Use the 2 search boxes below to find names and compare their popularity. You can select multiple names per box.
         """
     )
+    female_names_selection = st.multiselect(
+        "Female names:", options=all_names_by_gender["F"],
+    )
+    male_names_selection = st.multiselect(
+        "Male names:", options=all_names_by_gender["M"],
+    )
+
+    female_chart_data = get_names_data_filled(
+        baby_names, "F", female_names_selection, False
+    ).copy(deep=True)
+
+    female_chart_data["name"] = female_chart_data["name"].apply(
+        lambda name: f"{name} (F)"
+    )
+
+    male_chart_data = get_names_data_filled(
+        baby_names, "M", male_names_selection, False
+    ).copy(deep=True)
+
+    male_chart_data["name"] = male_chart_data["name"].apply(lambda name: f"{name} (M)")
+
+    chart_data = pd.concat([female_chart_data, male_chart_data])
+    chart_data = chart_data.pivot(
+        index="year", columns="name", values="pct_gender"
+    ).reset_index()
+    chart_data.columns = [col[0].upper() + col[1:] for col in chart_data.columns]
+
+    year_range = [list(baby_names.index.get_level_values(0))[i] for i in [0, -1]]
+
+    # Empty graph if no names selected
+    if len(chart_data) == 0:
+        x_curr = range(year_range[0], year_range[1])
+        y_curr = [np.nan] * len(x_curr)
+        fig = px.line(
+            x=x_curr,
+            y=y_curr,
+            range_x=(year_range[0] - 1, year_range[1] + 1),
+            range_y=(0, 3),
+            labels={"x": "Year"},
+        )
+    else:
+        fig = px.line(
+            chart_data,
+            x="Year",
+            y=chart_data.columns.drop("Year"),
+            range_x=(year_range[0] - 1, year_range[1] + 1),
+            labels={"variable": "Name"},
+        )
+    fig.layout.title = "% of newborn females / males with selected name(s)"
+    fig.layout.yaxis["rangemode"] = "tozero"
+    fig.layout.yaxis["title"] = "% newborn females / males"
+    fig.update_layout(hovermode="x unified")
+
+    # Update hover text
+    fig.update_traces(hovertemplate="%{data.name}:<br>%{y:.4f}%<extra></extra>")
+    st.write(fig)
 
 
 def main():
@@ -260,24 +352,26 @@ def main():
         layout="centered",
         initial_sidebar_state="auto",
     )
+    init_sidebar_elements()
     init_header_elements()
 
     # Load data
     baby_names = load_data("baby_names")
     biblical_names = load_data("biblical_names")
     religion_trends = load_data("religion_trends")
+    all_names_by_gender = load_data("all_names_by_gender", baby_names)
 
     # Get data for top n names
     gender, n = "F", 10
     top_10_female_names = get_top_n_names_sorted(baby_names, gender, n)
     top_10_female_names_data = get_names_data_filled(
-        baby_names, gender, top_10_female_names["name"]
+        baby_names, gender, top_10_female_names["name"], True
     )
 
     gender, n = "M", 10
     top_10_male_names = get_top_n_names_sorted(baby_names, gender, n)
     top_10_male_names_data = get_names_data_filled(
-        baby_names, gender, top_10_male_names["name"]
+        baby_names, gender, top_10_male_names["name"], True
     )
 
     init_top_n_names_elements(
@@ -286,6 +380,10 @@ def main():
         top_10_male_names,
         top_10_male_names_data,
     )
+
+    st.markdown("---")
+
+    init_explore_name_trends(baby_names, all_names_by_gender)
 
 
 if __name__ == "__main__":
