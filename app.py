@@ -42,6 +42,9 @@ def load_data(data_to_load, prereq_data=None):
                 curr_names_df["year"] = year
                 baby_names.append(curr_names_df)
         baby_names = pd.concat(baby_names)
+        baby_names.sort_values(
+            by=["year", "gender", "count"], ascending=[True, True, False]
+        )
 
         # Count as a pct of total count (each gender)
         total_count_per_year_gender = baby_names.groupby(["year", "gender"])[
@@ -181,6 +184,8 @@ def plot_name_pct_peak(names_annual_data, names_overall_data, initial_name, gend
     fig.layout.yaxis["rangemode"] = "tozero"
     fig.update_layout(showlegend=False)
     fig.update_layout(hovermode="x unified")
+    fig.layout.xaxis.fixedrange = True
+    fig.layout.yaxis.fixedrange = True
 
     # Update hover text
     fig.update_traces(hovertemplate="%{y:.4f}%<extra></extra>")
@@ -318,7 +323,7 @@ def init_explore_name_trends(baby_names, all_names_by_gender):
 
     # Empty graph if no names selected
     if len(chart_data) == 0:
-        x_curr = range(year_range[0], year_range[1])
+        x_curr = list(range(year_range[0], year_range[1]))
         y_curr = [np.nan] * len(x_curr)
         fig = px.line(
             x=x_curr,
@@ -327,6 +332,10 @@ def init_explore_name_trends(baby_names, all_names_by_gender):
             range_y=(0, 3),
             labels={"x": "Year"},
         )
+        st.write(type(x_curr))
+        st.write(x_curr)
+        st.write(type(y_curr))
+        st.write(y_curr)
     else:
         fig = px.line(
             chart_data,
@@ -338,6 +347,8 @@ def init_explore_name_trends(baby_names, all_names_by_gender):
     fig.layout.title = "% of newborn females / males with selected name(s)"
     fig.layout.yaxis["rangemode"] = "tozero"
     fig.layout.yaxis["title"] = "% newborn females / males"
+    fig.layout.xaxis.fixedrange = True
+    fig.layout.yaxis.fixedrange = True
     fig.update_layout(hovermode="x unified")
 
     # Update hover text
