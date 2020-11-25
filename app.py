@@ -219,7 +219,7 @@ def plot_name_pct_peak(names_annual_data, names_overall_data, initial_name, gend
     ]
 
     fig.update_layout(sliders=sliders)
-    st.write(fig)
+    st.plotly_chart(fig, use_container_width=True)
 
 
 def init_header_elements():
@@ -352,7 +352,7 @@ def init_explore_name_trends(baby_names, all_names_by_gender):
 
     # Update hover text
     fig.update_traces(hovertemplate="%{data.name}:<br>%{y:.4f}%<extra></extra>")
-    st.write(fig)
+    st.plotly_chart(fig, use_container_width=True)
 
 
 def main():
