@@ -365,8 +365,6 @@ def main():
 
     # Load data
     baby_names = load_data("baby_names")
-    st.write(baby_names.iloc[:10])
-    st.write(baby_names.iloc[-10:])
     biblical_names = load_data("biblical_names")
     religion_trends = load_data("religion_trends")
     all_names_by_gender = load_data("all_names_by_gender", baby_names)
@@ -383,6 +381,8 @@ def main():
     top_10_male_names_data = get_names_data_filled(
         baby_names, gender, top_10_male_names["name"], True
     )
+    
+    st.write(baby_names.query("gender=='F'"))
 
     init_top_n_names_elements(
         top_10_female_names,
@@ -392,9 +392,9 @@ def main():
     )
 
     st.markdown("---")
-    st.write(baby_names.iloc[:10])
-    st.write(baby_names.iloc[-10:])
+
     init_explore_name_trends(baby_names, all_names_by_gender)
+    st.write(baby_names.query("gender=='F'"))
 
 if __name__ == "__main__":
     main()
