@@ -325,10 +325,6 @@ def init_explore_name_trends(baby_names, all_names_by_gender):
     if len(chart_data) == 0:
         x_curr = list(range(year_range[0], year_range[1]))
         y_curr = [np.nan] * len(x_curr)
-        st.write(type(x_curr))
-        st.write(x_curr)
-        st.write(type(y_curr))
-        st.write(y_curr)
         fig = px.line(
             x=x_curr,
             y=y_curr,
@@ -336,6 +332,10 @@ def init_explore_name_trends(baby_names, all_names_by_gender):
             range_y=(0, 3),
             labels={"x": "Year"},
         )
+        st.write(type(x_curr))
+        st.write(x_curr)
+        st.write(type(y_curr))
+        st.write(y_curr)
     else:
         fig = px.line(
             chart_data,
