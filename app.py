@@ -68,6 +68,9 @@ def load_data(data_to_load, prereq_data=None):
         baby_names["name"] = baby_names["name"].apply(lambda name: name.lower())
 
         baby_names.set_index(["year", "gender", "name"], inplace=True)
+        baby_names.sort_values(
+            by=["year", "gender", "count"], ascending=[True, True, False], inplace=True
+        )
         return baby_names
     elif data_to_load == "biblical_names":
         with open("data/data_external/biblical_names.txt", "r") as f:
@@ -332,10 +335,6 @@ def init_explore_name_trends(baby_names, all_names_by_gender):
             range_y=(0, 3),
             labels={"x": "Year"},
         )
-        st.write(type(x_curr))
-        st.write(x_curr)
-        st.write(type(y_curr))
-        st.write(y_curr)
     else:
         fig = px.line(
             chart_data,
