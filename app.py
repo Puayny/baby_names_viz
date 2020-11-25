@@ -66,7 +66,7 @@ def load_data(data_to_load, prereq_data=None):
 
         baby_names.set_index(["year", "gender", "name"], inplace=True)
         baby_names.sort_values(
-            by=["year", "gender", "count"], ascending=[True, True, False], inplace=True
+            by=["year", "gender", "count"], ascending=[True, True, False]
         )
         return baby_names
     elif data_to_load == "biblical_names":
