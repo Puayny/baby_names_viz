@@ -296,10 +296,10 @@ def init_explore_name_trends(baby_names, all_names_by_gender):
         """
     )
     female_names_selection = st.multiselect(
-        "Female names:", options=all_names_by_gender["F"],
+        "Female names:", options=all_names_by_gender["F"], default=["olivia"]
     )
     male_names_selection = st.multiselect(
-        "Male names:", options=all_names_by_gender["M"],
+        "Male names:", options=all_names_by_gender["M"], default=["oliver"]
     )
 
     female_chart_data = get_names_data_filled(
